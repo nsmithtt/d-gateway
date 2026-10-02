@@ -48,7 +48,10 @@ gets added.
 
 Two layers, so the personal config stays a straight copy:
 
-- `config/tmux.conf` — the desktop config, verbatim. Re-sync it freely.
+- `config/tmux.conf` — the desktop config, kept in sync by hand. It carries
+  three fixes that apply equally on the desktop: a `default-session-name`
+  option that tmux rejects as invalid, a duplicated
+  `automatic-rename-format`, and trailing whitespace.
 - `config/gateway.tmux.conf` — what the container actually loads. It sources
   the above, then re-applies the settings this use case needs: a 200k-line
   history, `remain-on-exit` so a crashed agent's last output survives, no
