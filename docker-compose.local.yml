@@ -1,0 +1,23 @@
+# Standalone compose for local development on a laptop. No tailnet node, no
+# auth key required - the workbench uses the default bridge network and your
+# host's existing connectivity. Used via `make local-up`, not as an override.
+
+name: gateway-local
+
+services:
+  workbench:
+    build:
+      context: .
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
+    image: gateway-workbench:latest
+    container_name: gateway-workbench-local
+    restart: unless-stopped
+    environment:
+      GATEWAY_SESSION: ${GATEWAY_SESSION:-gateway}
+      TZ: ${TZ:-UTC}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./data/home:/home/agent
+      - ./data/workspace:/workspace
+    stop_grace_period: 30s

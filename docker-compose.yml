@@ -1,0 +1,76 @@
+# Production compose for the IT-hosted VM. This file is the demarcation point:
+# everything Tenstorrent-specific arrives through environment variables in the
+# .env file that Ansible assembles, so this stays public-repo safe.
+
+name: gateway
+
+services:
+  # Joins the tailnet as its own tagged node. The workbench shares this
+  # container's network namespace, which is what gives the agents direct
+  # access to the network segments advertised on the tailnet (rather than
+  # relying on the VM host's routes).
+  tailscale:
+    image: tailscale/tailscale:v1.90.8
+    container_name: gateway-tailscale
+    hostname: ${TS_HOSTNAME:-gateway}
+    restart: unless-stopped
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:?TS_AUTHKEY is required - request a tagged auth key from IT}
+      TS_HOSTNAME: ${TS_HOSTNAME:-gateway}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_ACCEPT_DNS: "true"
+      # Accept subnet routes so agents can reach the lab segments, and pick up
+      # whatever extra flags the deployment needs (e.g. --advertise-tags).
+      TS_EXTRA_ARGS: ${TS_EXTRA_ARGS:---accept-routes}
+    volumes:
+      - ${DATA_DIR:-./data}/tailscale:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    healthcheck:
+      test: ["CMD", "tailscale", "status", "--json"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  workbench:
+    build:
+      context: .
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+      cache_from:
+        - gateway-workbench:latest
+    image: gateway-workbench:latest
+    container_name: gateway-workbench
+    restart: unless-stopped
+    # Share the tailnet node's netns: no ports of our own, tailnet DNS and
+    # routes apply directly to every agent process.
+    network_mode: service:tailscale
+    depends_on:
+      tailscale:
+        condition: service_healthy
+    environment:
+      GATEWAY_SESSION: ${GATEWAY_SESSION:-gateway}
+      FQDN: ${FQDN:-}
+      TZ: ${TZ:-UTC}
+      # Agent credentials. Sourced from the IT-provided env file (1Password),
+      # never committed.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      # Persisted home: agent auth state, ssh keys, shell and nvim config.
+      - ${DATA_DIR:-./data}/home:/home/agent
+      # Checkouts the agents operate on.
+      - ${DATA_DIR:-./data}/workspace:/workspace
+    # The image already runs tini as its entrypoint, which reaps the process
+    # trees tmux orphans, so Docker's own init would just be a second PID 1.
+    init: false
+    # tmux needs time to signal long-running agents before the kill.
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: ${MEMORY_LIMIT:-8g}
