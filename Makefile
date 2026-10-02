@@ -62,7 +62,7 @@ status:
 
 # -it so the session is usable; detach with the tmux prefix then d.
 attach:
-	$(COMPOSE) exec -it workbench tmux -f /etc/gateway/tmux.conf attach -t $(SESSION)
+	$(COMPOSE) exec -it workbench tmux -f /etc/gateway/gateway.tmux.conf attach -t $(SESSION)
 
 shell:
 	$(COMPOSE) exec -it workbench bash -l
@@ -86,7 +86,7 @@ local-logs:
 	$(COMPOSE_LOCAL) logs -f
 
 local-attach:
-	$(COMPOSE_LOCAL) exec -it workbench tmux -f /etc/gateway/tmux.conf attach -t $(SESSION)
+	$(COMPOSE_LOCAL) exec -it workbench tmux -f /etc/gateway/gateway.tmux.conf attach -t $(SESSION)
 
 clean:
 	$(COMPOSE) down --remove-orphans

@@ -96,7 +96,7 @@ RUN groupadd -g "${APP_GID}" agent \
     && mkdir -p /workspace && chown agent:agent /workspace
 
 COPY --chown=root:root bin/entrypoint.sh bin/doctor.sh /usr/local/bin/
-COPY --chown=agent:agent config/tmux.conf /etc/gateway/tmux.conf
+COPY --chown=agent:agent config/tmux.conf config/gateway.tmux.conf /etc/gateway/
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/doctor.sh
 
 USER agent
@@ -104,7 +104,8 @@ WORKDIR /workspace
 
 ENV HOME=/home/agent \
     PATH=/home/agent/.local/bin:$PATH \
-    TMUX_CONF=/etc/gateway/tmux.conf \
+    SHELL=/bin/bash \
+    TMUX_CONF=/etc/gateway/gateway.tmux.conf \
     GATEWAY_SESSION=gateway
 
 # tini reaps the agent processes that tmux orphans over a long-lived session.

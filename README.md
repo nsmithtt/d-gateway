@@ -44,6 +44,18 @@ Tailscale + Active Directory SSH to the VM, then `make attach`. If we ever want
 a status dashboard, that's when the auth-proxy trio from the IT example repo
 gets added.
 
+## tmux config
+
+Two layers, so the personal config stays a straight copy:
+
+- `config/tmux.conf` — the desktop config, verbatim. Re-sync it freely.
+- `config/gateway.tmux.conf` — what the container actually loads. It sources
+  the above, then re-applies the settings this use case needs: a 200k-line
+  history, `remain-on-exit` so a crashed agent's last output survives, no
+  automatic renaming, Linux-appropriate copy bindings (the desktop config pipes
+  to `pbcopy`), and an explicit `default-shell` — the desktop config derives it
+  from `$SHELL`, which is empty in a container and makes tmux fail to parse.
+
 ## Persistence
 
 All state lives under `$DATA_DIR` (IT provides the path on the VM's persistent
